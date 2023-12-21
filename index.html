@@ -11,17 +11,255 @@
 
 Please connect to <a href=red.ht/kcdkerala-workshop>red.ht/kcdkerala-workshop</a> and start the environment.
 <br>
+<br>
 
 Click at the bottom right corner -> <img src="images/start.png" alt="start button">
+<br>
 <br>
 
 The environment will take 3-4 mins to spin up, so please be patient.
 <br>
+<br>
 
 Once the environment is initialized, you can access the Linux terminal on the left side of the screen.
 <br>
+<br>
+<img src="images/1.png" alt="terminal">
+<br>
+<br>
 
 We will do the workshop steps in this terminal for 30-45 minutes. 
+<br>
+<br>
+
+<h2>Install the container tools package in your environment.</h2>
+<br>
+
+<b><font size="4" style="color:red;">NOTE:</font></b> Anything starting with # are commands to be executed in the Linux Server Terminal
+<br>
+<br>
+
+First, let’s check what Operating System we are in and the kernel version.
+<br>
+<br>
+<font style="color:blue;"># cat /etc/os-release</font>
+<br>
+<br>
+<img src="images/2.png" alt="os-release">
+<br>
+<br>
+
+<font style="color:blue;"># uname -r</font>
+<br>
+<br>
+<img src="images/3.png" alt="uname">
+<br>
+<br>
+
+This is a Red Hat Enterprise Linux(RHEL) 9.3 server, codenamed “Plow” using kernel version 5.14
+<br>
+<br>
+
+This will be our Container Host, where we will manage our containers and container images.
+<br>
+<br>
+
+Let’s now install the “Container Tools” package.
+<br>
+<br>
+
+<font style="color:blue;"># dnf install -y container-tools</font>
+<br>
+<br>
+
+<h2>Install the container tools package in your environment.</h2>
+<br>
+<br>
+
+<font style="color:blue;"># podman pull ubuntu && podman pull ubi8</font>
+<br>
+<br>
+<img src="images/4.png" alt="uname">
+<br>
+<br>
+
+Let’s create a new container using the Ubuntu image.
+<br>
+<br>
+<font style="color:blue;"># podman run --name ubuntu -it ubuntu /bin/bash</font>
+<br>
+This command would instantiate the container from the image and get you the terminal prompt (-it option passed above) inside the container operating system.
+<br>
+<br>
+
+Let’s check what operating system it is!
+<br>
+<br>
+
+<font style="color:blue;"># cat /etc/os-release</font>
+<br>
+<br>
+<img src="images/5.png">
+<br>
+<br>
+
+This is Ubuntu 22.04 release, codenamed “jammy”. So the container is running a different operating system than what is running on the host operating system, which is RHEL9.3
+<br>
+<br>
+
+Check the kernel version inside the container.
+<br>
+<br>
+
+<font style="color:blue;"># uname -r</font>
+<br>
+<br>
+
+<img src="images/6.png">
+<br>
+<br>
+
+This is the kernel from the Host Operating System.
+<br>
+<br>
+
+NOTE: Containers will piggyback into the host operating system kernel and its features.
+<br>
+<br>
+
+Now let’s exit from the Ubuntu container and start a new container using the ubi8 image.
+<br>
+<br>
+
+<font style="color:blue;"># podman run --name rhel -it ubi8 /bin/bash</font>
+<br>
+<br>
+
+Once inside the container, check the OS version.
+<br>
+<br>
+
+<font style="color:blue;"># cat /etc/os-release</font>
+<br>
+<br>
+
+<img src="images/7.png">
+<br>
+<br>
+
+As you can see, the image has a RHEL8.9 Operating System.
+<br>
+<br>
+
+Now you can exit from the container by running the “exit” command.
+<br>
+<br>
+
+<b><h2>Security in Containers and Images</h2></b>
+<br>
+
+As you may know by now, a container is instantiated from a container image!
+<br>
+<br>
+
+Image => Container.
+<br>
+<br>
+
+So we must use container images that are certified by the vendor or when we build the container image, we follow the security best practices.
+<br>
+<br>
+
+Let’s build a container image that uses Go to show a basic welcome message to the screen.
+<br>
+<br>
+
+As a first step, clone <a href=https://github.com/sanujan/kcdkerala>https://github.com/sanujan/kcdkerala/</a> GitHub repository locally.
+<br>
+<br>
+
+<font style="color:blue;"># cd</font>
+<br>
+<font style="color:blue;"># git clone https://github.com/sanujan/kcdkerala/</font>
+<br>
+<br>
+
+<img src="images/8.png">
+<br>
+<br>
+
+Change to /root/kcdkerala/workshop1 directory and list the contents
+<br>
+<br>
+
+<font style="color:blue;"># cd /root/kcdkerala/workshop1 && ls </font>
+<br>
+<br>
+<img src="images/9.png">
+<br>
+<br>
+
+Check the contents of the Dockerfile and the main.go Go file.
+<br>
+<br>
+
+Let’s first build the Go application container image using the Dockerfile.
+<br>
+<br>
+
+<font style="color:blue;"># docker build -t goapp -f Dockerfile </font>
+<br>
+<br>
+<img src="images/10.png">
+<br>
+<br>
+
+Now instantiate a container from this newly built image.
+<br>
+<br>
+
+<font style="color:blue;"># docker run --name goapp localhost/goapp </font>
+<br>
+<br>
+
+<img src="images/11.png">
+<br>
+<br>
+
+The container is running as expected. But, let’s see the size of the image!
+<br>
+<br>
+
+<font style="color:blue;"># docker images </font>
+<br>
+<br>
+
+<img src="images/12.png">
+<br>
+<br>
+
+The goapp image is around 866 MB in size, which is around ~30MB more than the golang image we pulled from DockerHub. The size of the image is quite big considering it’s a simple Go application showing a welcome message. 
+<br>
+<br>
+
+That’s where we can use “Multi-Stage” builds to reduce the footprint of the container images.
+<br>
+<br>
+
+Let’s check the contents of the file Dockerfile-multi-stage-build
+<br>
+<br>
+
+<font style="color:blue;"># cat /root/kcdkerala/workshop1/Dockerfile-multi-stage-build </font>
+<br>
+<br>
+
+Build the new image using the “multi-stage” container build method.
+<br>
+<br>
+
+<font style="color:blue;"># docker build -t goappminimal -f Dockerfile-multi-stage-build </font>
+<br>
 <br>
 
 </body>
