@@ -9,7 +9,7 @@
 <b><h2>Initial Setup</h2></b>
 <br>
 
-Please connect to <a href=red.ht/kcdkerala-workshop>red.ht/kcdkerala-workshop</a> and start the environment.
+Please connect to <a href=https://red.ht/kcdkerala-workshop target="_blank">red.ht/kcdkerala-workshop</a> and start the environment.
 <br>
 <br>
 
@@ -127,7 +127,7 @@ NOTE: Containers will piggyback into the host operating system kernel and its fe
 <br>
 <br>
 
-Now let’s exit from the Ubuntu container and start a new container using the ubi8 image.
+Now let’s <b>exit</b> from the Ubuntu container and start a new container using the ubi8 image.
 <br>
 <br>
 
@@ -261,6 +261,124 @@ Build the new image using the “multi-stage” container build method.
 <font style="color:blue;"># docker build -t goappminimal -f Dockerfile-multi-stage-build </font>
 <br>
 <br>
+
+The first build is given a name called “firstbuild”, which we will reference later in the second build, when we use a different container image as base(parent) image.
+<br>
+<br>
+
+Check the first “FROM” instruction in the Dockerfile-multi-stage-build file.
+<br>
+<br>
+
+<b><h2>FROM docker.io/library/golang as firstbuild</h2></b>
+<br>
+<br>
+
+The “as firstbuild” is a name given to this build using the golang container image from DockerHub.
+<br>
+<br>
+
+Later in line 8, we reference the same build using “--from=firstbuild” as part of the COPY instruction.
+<br>
+<br>
+
+<b><h2>COPY --from=firstbuild /kcdkerala/main .</h2></b>
+<br>
+<br>
+
+Here, the second build which uses the alpine container image, will just copy the binary file of Go application “/kcdkerala/main” to second build’s WORKDIR “/root”
+<br>
+<br>
+
+This way, we don’t need to use the HUGE golang container image or any dependencies or stale files left over from the first build. So the resulting Go application image will be quite smaller in size.
+<br>
+<br>
+
+Check the image sizes using “docker images” command.
+<br>
+<br>
+
+<font style="color:blue;"># docker images </font>
+<br>
+<br>
+
+<img src="images/13.png">
+<br>
+<br>
+
+The first goapp image is around 868 MB, while the second image built using “multi-stage” build goappminimal  is only 9.47 MB. HUGE reduction in size!
+<br>
+<br>
+
+Create a new container from this small image
+<br>
+<font style="color:blue;"># docker run --name goappminimal localhost/goappminimal</font>
+<br>
+Kubernetes Community Days, Kerala!!
+<br>
+<br>
+
+<b><h2>Container Image Scanning</h2></b>
+<br>
+<br>
+
+Now that we have seen how to reduce the image footprint, let’s now check on scanning the images for any known vulnerabilities.
+<br>
+<br>
+
+Trivy is an open source security scanner and it can scan container images.
+<br>
+<br>
+
+Let’s first deploy Trivy in our container host (RHEL9 Server)
+<br>
+<br>
+
+Configure the server to connect to the Trivy Yum repository
+<br>
+<br>
+
+<font style="color:blue;"># wget http://people.redhat.com/sanujan/trivy.repo -O /etc/yum.repos.d/trivy.repo</font>
+<br>
+<br>
+
+Install Trivy
+<br>
+<br>
+
+<font style="color:blue;"># yum -y install trivy</font>
+<br>
+<br>
+
+Pull the CentOS container image and run a scan using the “trivy” CLI.
+<br>
+<br>
+
+<font style="color:blue;"># docker pull centos</font>
+<br>
+<br>
+
+<font style="color:blue;"># trivy image centos</font>
+<br>
+<br>
+
+<b><font size="4" style="color:red;">NOTE:</font></b> You may need to start podman systemd daemon to allow Trivy access to the podman API
+<font style="color:blue;"># systemctl start podman</font>
+<br>
+<br>
+
+<font style="color:blue;"># trivy image –format json –output result.json –list-all-pkgs centos</font>
+<br>
+<br>
+
+<img src="images/14.png">
+<br>
+<br>
+
+<img src="images/15.png">
+<br>
+<br>
+
 </center>
 </body>
 </html>
